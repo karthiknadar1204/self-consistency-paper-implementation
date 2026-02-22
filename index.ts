@@ -44,16 +44,30 @@ app.post("/self-consistency", async (req, res) => {
     return res.status(400).json({ error: "Body must include a string 'prompt' (your query)." });
   }
 
+  const samplesNum = Number(numSamples);
+  if (!Number.isInteger(samplesNum) || samplesNum < 1 || samplesNum > 15) {
+    return res.status(400).json({
+      error: "Invalid 'numSamples': must be an integer between 1 and 15.",
+    });
+  }
+
+  const tempNum = Number(temperature);
+  if (Number.isNaN(tempNum) || tempNum < 0.1 || tempNum > 1) {
+    return res.status(400).json({
+      error: "Invalid 'temperature': must be a number between 0.1 and 1.",
+    });
+  }
+
   try {
     console.log(" self-consistency request");
     console.log("Query:", prompt.slice(0, 200) + (prompt.length > 200 ? "..." : ""));
-    console.log(`Config: numSamples=${numSamples}, temp=${temperature}, model=${model}`);
+    console.log(`Config: numSamples=${samplesNum}, temp=${tempNum}, model=${model}`);
 
     // Step 1: Sample multiple diverse reasoning paths in parallel
     const samples = await Promise.all(
-      Array.from({ length: numSamples }, (_, i) => {
-        console.log(`[sample ${i + 1}/${numSamples}] requesting...`);
-        return getReasoningPath(prompt, model, temperature, topP, maxTokens);
+      Array.from({ length: samplesNum }, (_, i) => {
+        console.log(`[sample ${i + 1}/${samplesNum}] requesting...`);
+        return getReasoningPath(prompt, model, tempNum, topP, maxTokens);
       })
     );
 
@@ -93,7 +107,7 @@ app.post("/self-consistency", async (req, res) => {
     const response = {
       topAnswer,
       consistencyScore,
-      totalSamples: numSamples,
+      totalSamples: samplesNum,
       validAnswersCount: answers.length,
       voteDetails: sortedVotes.map(([ans, count]) => ({ answer: ans, count })),
       rawSamples: samples.map(s => s.content),
