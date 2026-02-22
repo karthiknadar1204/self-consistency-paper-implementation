@@ -20,10 +20,19 @@ Your answer can be a number, a word, a short phrase, or a letter (e.g. A, B). Do
 
 app.use(express.json());
 
-// Allow frontend (e.g. Next.js on another port) to call this API
-const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:3000";
+// CORS: allow origins from env (comma-separated) or defaults (localhost + prod frontend)
+const defaultOrigins = [
+  "http://localhost:3000",
+  "https://self-consistency-paper-implementation-production.up.railway.app",
+];
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
+  : defaultOrigins;
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+  const origin = req.headers.origin;
+  const allowOrigin: string =
+    origin && allowedOrigins.includes(origin) ? origin : (allowedOrigins[0] ?? "http://localhost:3000");
+  res.setHeader("Access-Control-Allow-Origin", allowOrigin);
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization");
   if (req.method === "OPTIONS") return res.sendStatus(204);
