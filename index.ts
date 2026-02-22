@@ -30,6 +30,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.post("/self-consistency", async (req, res) => {
   const {
     prompt,
